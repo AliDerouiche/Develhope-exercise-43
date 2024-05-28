@@ -12,10 +12,12 @@ import java.util.Objects;
 
 @Service
 public class FileStorageService {
-    private final Path fileStorageLocation; // define this
+    private final Path fileStorageLocation;
+    private final FileRepository fileRepository; // Assuming you have a FileRepository
 
-    public FileStorageService() {
+    public FileStorageService(FileRepository fileRepository) {
         this.fileStorageLocation = Paths.get("C:/FileUploads").toAbsolutePath().normalize();
+        this.fileRepository = fileRepository;
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
@@ -31,6 +33,13 @@ public class FileStorageService {
             }
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            // Save the file information in the database
+            FileEntity fileEntity = new FileEntity();
+            fileEntity.setFileName(fileName);
+            fileEntity.setFileType(file.getContentType());
+            fileRepository.save(fileEntity);
+
             return fileName;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
